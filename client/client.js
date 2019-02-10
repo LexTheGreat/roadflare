@@ -5,6 +5,7 @@ var standAlone = true; // Disable for using hooks only.
 var keyPress = 38; // E
 
 var speedZones = []; // {FlareObject: id, FlareObjectPos: arr, ZoneId: id}
+var didSync = false;
 RequestModel("w_am_flare");
 RequestWeaponAsset(1233104067, 31, 0);
 
@@ -72,5 +73,8 @@ onNet('roadflare:Pickup', (flarePos) => {
 });
 
 onNet('playerSpawned', () => {
-	emitNet('roadflare:Server:Sync');
+	if (!didSync) {
+		emitNet('roadflare:Server:Sync');
+		didSync = true;
+	}
 });
