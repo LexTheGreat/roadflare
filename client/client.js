@@ -11,26 +11,35 @@ RequestWeaponAsset(1233104067, 31, 0);
 if (standAlone) {
 	setTick(() => {
 		if (IsControlJustReleased(0, keyPress)) {
+			var playerPos = GetEntityCoords(GetPlayerPed(-1), true);
 			if (GetSelectedPedWeapon(GetPlayerPed(-1)) == 1233104067) {
-				emit('roadflare:Place');
+				if (!IsPedInAnyVehicle(GetPlayerPed(-1), true) && GetSelectedPedWeapon(GetPlayerPed(-1)) == 1233104067) {
+					emitNet('roadflare:Server:Place', playerPos);
+					console.log("roadflare:Send:Place", playerPos);
+				}
 			} else {
-				emit('roadflare:Pickup');
+				if (!IsPedInAnyVehicle(GetPlayerPed(-1), true) && GetSelectedPedWeapon(GetPlayerPed(-1)) != 1233104067) {
+					var objectNear = GetClosestObjectOfType(playerPos[0], playerPos[1], playerPos[2], 5.0, "w_am_flare", false, false, false);
+					if (objectNear) {
+						var ObjectPos = GetEntityCoords(objectNear, true);
+						emitNet('roadflare:Server:Pickup', ObjectPos);
+						console.log("roadflare:Send:Pickup", ObjectPos);
+					}
+				}
 			}
 		}
 	});
 }
 
+onNet('roadflare:Sync', (flarePoses) => {
+	for(var i = 0; i < flarePoses.length; i++) {
+		emit('roadflare:Place', flarePoses[i]);
+	}
+});
 
-onNet('roadflare:Place', () => {
-	if (IsPedInAnyVehicle(GetPlayerPed(-1), true))
-		return;
-	
-	if (GetSelectedPedWeapon(GetPlayerPed(-1)) != 1233104067)
-		return;
-	
-	var playerCoord = GetEntityCoords(GetPlayerPed(-1), true);
-	console.log("Create Zone/Flare");
-	var flareObject = CreateWeaponObject(1233104067, 1, playerCoord[0], playerCoord[1], playerCoord[2], true, 0.0, false);
+onNet('roadflare:Place', (flarePos) => {
+	console.log("roadflare:Place", flarePos);
+	var flareObject = CreateWeaponObject(1233104067, 1, flarePos[0], flarePos[1], flarePos[2], true, 0.0, false);
 	PlaceObjectOnGroundProperly(flareObject);
 	var flareObjectPos = GetEntityCoords(flareObject, true);
 	var zoneId = N_0x2ce544c68fb812a0(flareObjectPos[0], flareObjectPos[1], flareObjectPos[2], speedLimitRadius, speedLimit, false);
@@ -38,15 +47,9 @@ onNet('roadflare:Place', () => {
 	console.log( {FlareObject: flareObject, FlareObjectPos: flareObjectPos, ZoneId: zoneId} );
 });
 
-onNet('roadflare:Pickup', () => {
-	if (IsPedInAnyVehicle(GetPlayerPed(-1), true))
-		return;
-	
-	if (GetSelectedPedWeapon(GetPlayerPed(-1)) == 1233104067)
-		return;
-	
-	var playerCoord = GetEntityCoords(GetPlayerPed(-1), true);
-	var objectNear = GetClosestObjectOfType(playerCoord[0], playerCoord[1], playerCoord[2], 5.0, "w_am_flare", false, false, false);
+onNet('roadflare:Pickup', (flarePos) => {
+	console.log("roadflare:Pickup", flarePos);
+	var objectNear = GetClosestObjectOfType(flarePos[0], flarePos[1], flarePos[2], 5.0, "w_am_flare", false, false, false);
 	if (objectNear) {
 		console.log("Finding Zone/Flare");
 		var ObjectPos = GetEntityCoords(objectNear, true);
@@ -66,4 +69,8 @@ onNet('roadflare:Pickup', () => {
 			DeleteObject(objectNear);
 		}
 	}
+});
+
+onNet('playerSpawned', () => {
+	emitNet('roadflare:Server:Sync');
 });
