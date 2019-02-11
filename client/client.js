@@ -6,20 +6,21 @@ var keyPress = 38; // E
 
 var speedZones = []; // {FlareObject: id, FlareObjectPos: arr, ZoneId: id}
 var didSync = false;
+var flareHash = GetHashKey("weapon_flare");
 RequestModel("w_am_flare");
-RequestWeaponAsset(1233104067, 31, 0);
+RequestWeaponAsset(flareHash, 31, 0);
 
 if (standAlone) {
 	setTick(() => {
 		if (IsControlJustReleased(0, keyPress)) {
 			var playerPos = GetEntityCoords(GetPlayerPed(-1), true);
-			if (GetSelectedPedWeapon(GetPlayerPed(-1)) == 1233104067) {
-				if (!IsPedInAnyVehicle(GetPlayerPed(-1), true) && GetSelectedPedWeapon(GetPlayerPed(-1)) == 1233104067) {
+			if (GetSelectedPedWeapon(GetPlayerPed(-1)) == flareHash) {
+				if (!IsPedInAnyVehicle(GetPlayerPed(-1), true) && GetSelectedPedWeapon(GetPlayerPed(-1)) == flareHash) {
 					emitNet('roadflare:Server:Place', playerPos);
 					console.log("roadflare:Send:Place", playerPos);
 				}
 			} else {
-				if (!IsPedInAnyVehicle(GetPlayerPed(-1), true) && GetSelectedPedWeapon(GetPlayerPed(-1)) != 1233104067) {
+				if (!IsPedInAnyVehicle(GetPlayerPed(-1), true) && GetSelectedPedWeapon(GetPlayerPed(-1)) != flareHash) {
 					var objectNear = GetClosestObjectOfType(playerPos[0], playerPos[1], playerPos[2], 5.0, "w_am_flare", false, false, false);
 					if (objectNear) {
 						var ObjectPos = GetEntityCoords(objectNear, true);
@@ -40,7 +41,7 @@ onNet('roadflare:Sync', (flarePoses) => {
 
 onNet('roadflare:Place', (flarePos) => {
 	console.log("roadflare:Place", flarePos);
-	var flareObject = CreateWeaponObject(1233104067, 1, flarePos[0], flarePos[1], flarePos[2], true, 0.0, false);
+	var flareObject = CreateWeaponObject(flareHash, 1, flarePos[0], flarePos[1], flarePos[2], true, 0.0, false);
 	PlaceObjectOnGroundProperly(flareObject);
 	var flareObjectPos = GetEntityCoords(flareObject, true);
 	var zoneId = N_0x2ce544c68fb812a0(flareObjectPos[0], flareObjectPos[1], flareObjectPos[2], speedLimitRadius, speedLimit, false);
